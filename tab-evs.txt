@@ -1,0 +1,17 @@
+
+\begin{table}[!htbp] \centering 
+  \caption{Expected Values of Support for Police Permits for Gun Purchases Among Strong Republicans} 
+  \label{} 
+\begin{tabular}{@{\extracolsep{5pt}} ccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+Category & Expected Value & 95\% Interval \\ 
+\hline \\[-1.8ex] 
+Female, Doesn't Own Gun & .836 & (.789, .874) \\ 
+Male, Doesn't Own Gun & .728 & (.662, .786) \\ 
+Female, Gun Owner & .661 & (.591, .729) \\ 
+Male, Gun Owner & .507 & (.430, .585) \\ 
+Male, Gun Owner, College Educated & .592 & (.512, .665) \\ 
+\hline \\[-1.8ex] 
+\end{tabular} 
+\end{table} 

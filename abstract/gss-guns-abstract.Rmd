@@ -1,0 +1,77 @@
+---
+title: "Clearing up Misconceptions about Americans' Attitudes in the Gun Control Debate, 1972-2014"
+author: |
+  | Steven V. Miller, Clemson University, svmille@clemson.edu
+abstract: "Gun control is one of the most controversial public opinion debates in the United States with each new mass shooting raises the stakes involved in the debate. It is easy to assume gridlock that has blocked legislation on gun control follows because of the mass-level polarization on the topic of gun control. My analysis of 28 waves of General Social Survey data from 1972 to 2016 shows this is wrong. My analysis of the data generates four key findings: 1) GOP partisanship does not robustly reduce support for gun control; 2) most 'strong' Republicans actually support gun control; 3) polarization of attitudes about gun control is only partial and recent; and 4) our casual assumptions about regional variation in attitudes toward gun control need re-evaluation. I conclude with a discussion of the differences we observe between elite polarization and mass polarization and with implications for the future of gun control advocacy."
+output: 
+  pdf_document:
+    latex_engine: pdflatex
+    keep_tex: true
+fontfamily: mathpazo
+fontsize: 11pt
+
+---
+
+
+**Word count**: 3,397
+
+<!--
+
+  
+
+
+
+m1ap <- show_ranef(M1a, "regioncondensed") + theme_steve() + facet_wrap(~variable,scale="free_x", labeller = as_labeller(c(`(Intercept)` = "Intercept", `z_partyid`="Party ID (D to R)"))) + ylab("") + ggtitle("Years (1972-1993)")
+
+m1bp <- show_ranef(M1b, "regioncondensed") + theme_steve() + facet_wrap(~variable,scale="free_x", labeller = as_labeller(c(`(Intercept)` = "Intercept", `z_partyid`="Party ID (D to R)"))) + ylab("") + ggtitle("Years (1994-2016)") 
+
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+
+  numPlots = length(plots)
+
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                    ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+
+ if (numPlots==1) {
+    print(plots[[1]])
+
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+
+multiplot(m1ap, m1bp, cols=2)
+
+m1abv %>%
+  filter(z_partyid == max(z_partyid)) %>%
+  ggplot(., aes(colour=Period)) + theme_steve() + 
+  geom_linerange(aes(x = regioncondensed, ymin = lwr,
+                       ymax = upr),
+                   lwd = 1, position = position_dodge(width = 1/2)) + 
+  geom_pointrange(aes(x = regioncondensed, y = fit, ymin = lwr,
+                        ymax = upr),
+                    lwd = 1/2, position = position_dodge(width = 1/2),
+                     fill = "WHITE") +
+  coord_flip()
+-->
