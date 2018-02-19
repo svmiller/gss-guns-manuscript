@@ -4,17 +4,18 @@ output:
 #  word_document:
 #    reference_docx: ~/Dropbox/miscelanea/svm-r-markdown-templates/svm-rmarkdown-word.docx
   pdf_document:
-    citation_package: natbib
+#    citation_package: natbib
     keep_tex: true
     fig_caption: true
     latex_engine: pdflatex
     template: ~/Dropbox/miscelanea/svm-r-markdown-templates/svm-latex-ms.tex
-bibliography: ~/Dropbox/master.bib
-biblio-style: apsr
+bibliography: "`r paste0(Sys.getenv('HOME'),'/Dropbox/master.bib')`"
+# biblio-style: apsr
 geometry: margin=1in
 header-includes:
    - \linespread{1.05}
 title: "What Americans Really Think About Gun Control: Evidence from the General Social Survey, 1972-2016"
+runhead: "What Americans Really Think About Gun Control"
 # subtitle: 
 thanks: "Replication files are available on the author's Github account ([github.com/svmiller](https://github.com/svmiller)). **Corresponding author**: svmille@clemson.edu."
 author:
@@ -22,15 +23,18 @@ author:
   affiliation: Clemson University
   email: svmille@clemson.edu
 date: "`r format(Sys.time(), '%B %d, %Y')`"
-abstract: "Gun control is one of the most controversial public opinion debates in the United States with each new mass shooting raises the stakes involved in the debate. It is easy to assume gridlock that has blocked legislation on gun control follows because of the mass-level polarization on the topic of gun control. My analysis of 28 waves of General Social Survey data from 1972 to 2016 shows this is wrong. My analysis of the data generates four key findings: 1) GOP partisanship does not robustly reduce support for gun control; 2) most 'strong' Republicans actually support gun control; 3) polarization of attitudes about gun control is only partial and recent; and 4) our casual assumptions about regional variation in attitudes toward gun control need re-evaluation. I conclude with a discussion of the differences we observe between elite polarization and mass polarization and with implications for the future of gun control advocacy."
+abstract: "Gun control is one of the most controversial public opinion debates in the United States for which conventional wisdom suggests mass polarization on the topic leads to policy gridlock. My analysis of 28 waves of General Social Survey data shows this is wrong and generates four key findings: 1) GOP partisanship does not robustly reduce support for gun control; 2) most 'strong' Republicans actually support gun control; 3) polarization of attitudes about gun control is only partial and recent; and 4) our casual assumptions about regional variation in attitudes toward gun control need re-evaluation. I conclude with a discussion of the differences we observe between elite polarization and mass polarization and with implications for the future of gun control advocacy."
 fontfamily: mathpazo
 fontfamilyoptions: sc, osf
 fontsize: 11pt
 keywords: "gun control, political attitudes, public opinion, polarization, elite cues"
+csl: apa.csl
+indent: yes
 ---
 
 ```{r loadpackages, include=FALSE, cache=FALSE}
-knitr::opts_chunk$set(cache=TRUE)
+knitr::opts_chunk$set(cache=TRUE,
+                      fig.path = "")
 setwd("~/Dropbox/projects/gss-guns")
 
 library(arm)
@@ -196,9 +200,9 @@ My analysis of a 44-year span of General Social Survey data tells a mixed story 
 
 # Methods
 
-I use General Social Survey (GSS) data for all available years from 1972 to 2016. The primary question of interest---whether the respondent favors or opposes a law that would require a person to obtain a police permit before he or she could buy a gun---is the most ubiquitous gun control item in the GSS. Its utility for the sake of this analysis is multiple. One, it appears in 28 of the 31 available GSS waves from 1972 to 2016.[^notasked] Other gun control items that appear in GSS are one-time questions. Two, the substance of the gun control question that GSS asks is subtly aggressive. It prompts the respondent to ask whether state approval for a gun of any kind is necessary when gun control opponents tend to cite precisely this kind of state overreach as justification for a maximalist interpretation of the Second Amendment to the U.S. Constitution. Thus, gun control advocates and interested lawmakers in Washington almost never express a gun control proposal like this, instead preferring to massage objections from gun control opponents with policies that target gun show loopholes, terror watch lists, or military-style rifles like the AR-15. GSS respondents that favor this form of gun control are signaling their willingness to accept other aggressive gun control measures. I keep the binary nature of this variable where a 1 indicates support of this form of gun control.
+I use General Social Survey (GSS) data for all available years from 1972 to 2016. The primary question of interest---whether the respondent favors or opposes a law that would require a person to obtain a police permit before he or she could buy a gun---is the most ubiquitous gun control item in the GSS. Its utility for the sake of this analysis is multiple. One, it appears in 28 of the 31 available GSS waves from 1972 to 2016.<!--[^notasked] --> Other gun control items that appear in GSS are one-time questions. Two, the substance of the gun control question that GSS asks is subtly aggressive. It prompts the respondent to ask whether state approval for a gun of any kind is necessary when gun control opponents tend to cite precisely this kind of state overreach as justification for a maximalist interpretation of the Second Amendment to the U.S. Constitution. Thus, gun control advocates and interested lawmakers in Washington almost never express a gun control proposal like this, instead preferring to massage objections from gun control opponents with policies that target gun show loopholes, terror watch lists, or military-style rifles like the AR-15. GSS respondents that favor this form of gun control are signaling their willingness to accept other aggressive gun control measures. I keep the binary nature of this variable where a 1 indicates support of this form of gun control.
 
-[^notasked]: The question was not asked in 1978, 1983, or 1986.
+<!-- [^notasked]: The question was not asked in 1978, 1983, or 1986. -->
 
 I also select data from the 2006 wave that features more granular questions about gun control policies. These include background checks for private sales, tougher penalties for illegal gun sales than drug sales, limiting semi-automatic weapons the police and military, making it illegal to carry a gun while drunk, and support for tougher gun control legislation as a function of the 9/11 terrorist attacks. These are binary variables that assume a value of 1 for respondents that favor a more aggressive gun control proposal.
 
@@ -241,9 +245,39 @@ M6 <- glmer(guns911 ~ z_age + collegeed + female + black + otherrace + z_partyid
             glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000))) 
 ```
 
+```{r table1text, eval=TRUE, echo=FALSE, tidy = TRUE, size="small", cache=FALSE, results="hide", message=F, warning=F}
+# Table1 <- capture.output(
+
+Table1 <- capture.output(stargazer(M1, M2, M3, M4, M5, M6, type="text", style="ajps",
+                                    title="Mixed Effects Models of Attitudes Toward Gun Control",
+                                   header=FALSE, font.size="small",
+                                   covariate.labels=c("Age", "College Educated", "Female",
+                                                      "Black", 
+                                                      "Other Race (Not White)", 
+                                                      "Party ID (D to R)",
+                                                      "Gun in the Household"), 
+          dep.var.labels.include = FALSE, 
+          star.cutoffs = c(.05), digit.separator=",", 
+          model.names=FALSE, omit.stat=c("aic","ll","bic"),
+          notes = c("Model 1: Require police permit prior to gun purchase?",
+                    "Model 2: Require background check for private gun sale?",
+                    "Model 3: Tougher penalties for illegal gun sales than drugs?",
+                    "Model 4: Limit semi-automatics to the military?",
+                    "Model 5: Should carrying a firearm while drinking alcohol be illegal?",
+                    "Model 6: Should gun control laws be stricter after 9/11?")
+))
+
+cat(Table1, sep = "\n", file = "tab-reg-text.txt")
+
+# cat(Table1, sep='\n')
+#           add.lines = list(c("Dependent Variable", 
+#                             "Require", "No"),
+#                           c("", "Police", "Try again later"))) 
+
+```
 
 
-```{r table1, eval=TRUE, echo=FALSE, tidy = TRUE, size="small", cache=FALSE, results="asis", message=F, warning=F}
+```{r table1latex, eval=TRUE, echo=FALSE, tidy = TRUE, size="small", cache=FALSE, results="asis", message=F, warning=F}
 require(stargazer)
 Table1 <- capture.output(stargazer(M1, M2, M3, M4, M5, M6, type="latex", style = "ajps",
                                    title="Mixed Effects Models of Attitudes toward Gun Control",
@@ -285,7 +319,7 @@ Table1 <- c(Table1[a <- 1:7], modelnames, Table1[-a])
 #for(i in c(34:43)){
 #  Table2[i] <-gsub("[*]", "\\\\dagger", Table2[i])
 #}
-cat(Table1, sep = "\n", file = "tab-reg.txt")
+cat(Table1, sep = "\n", file = "tab-reg-latex.txt")
 
 cat(Table1, sep='\n') 
 
@@ -457,13 +491,14 @@ EVs <-  rbind(fng, mng, fog, mog, mogc)
 #colnames(EVs) <- c("**Category**", "**Expected Value**", "**95% Interval**")
 # colnames(EVs) <- c("\\textbf{Category}", "\\textbf{Expected Value}", "\\textbf{95\\% Interval}")
 colnames(EVs) <- c("Category", "Expected Value", "95% Interval")
-#sink('analysis-output.txt')
-#kable(EVs, align=c("l","c","c"), caption="Expected Values of Support for Police Permits for Gun Purchases Among Strong Republicans")
+#sink('tab-evs.txt')
+TabEVs <- kable(EVs, align=c("l","c","c"), caption="Expected Values of Support for Police Permits for Gun Purchases Among Strong Republicans")
 #sink()
-Tabb <- capture.output(stargazer(EVs, type="latex", header=F,
-          summary=F, rownames=F, title="Expected Values of Support for Police Permits for Gun Purchases Among Strong Republicans"))
-cat(Tabb, sep = "\n", file = "tab-evs.txt")
-cat(Tabb, sep='\n') 
+#Tabb <- capture.output(stargazer(EVs, type="latex", header=F,
+#          summary=F, rownames=F, title="Expected Values of Support for Police Permits for Gun Purchases Among Strong Republicans"))
+cat(TabEVs, sep = "\n", file = "tab-evs.txt")
+kable(EVs, align=c("l","c","c"), caption="Expected Values of Support for Police Permits for Gun Purchases Among Strong Republicans")
+#cat(Tabb, sep='\n') 
 #sink()
 
 ```
@@ -677,10 +712,11 @@ There is one silver lining for gun control advocates amid these worrying trends,
 \newpage
 
 
-<!-- # References
+# References
 \setlength{\parindent}{-0.2in}
 \setlength{\leftskip}{0.2in}
 \setlength{\parskip}{8pt}
 \vspace*{-0.2in}
 \noindent
-\singlespacing -->
+\singlespacing
+<!-- \singlespacing -->
