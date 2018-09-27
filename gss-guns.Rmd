@@ -10,31 +10,50 @@ output:
     latex_engine: pdflatex
     template: ~/Dropbox/miscelanea/svm-r-markdown-templates/svm-latex-ms.tex
 bibliography: "`r paste0(Sys.getenv('HOME'),'/Dropbox/master.bib')`"
-# biblio-style: apsr
+biblio-style: apsr
 geometry: margin=1in
 header-includes:
    - \linespread{1.05}
-title: "What Americans Really Think About Gun Control: Evidence from the General Social Survey, 1972-2016"
-runhead: "What Americans Really Think About Gun Control"
+   - \LTcapwidth=.9\textwidth
+title: "What Americans Think About Gun Control: Evidence from the General Social Survey, 1972-2016"
+runhead: "What Americans Think About Gun Control"
 # subtitle: 
-thanks: "Replication files are available on the author's Github account ([github.com/svmiller](https://github.com/svmiller)). **Corresponding author**: svmille@clemson.edu."
+thanks: "This paper is forthcoming at *Social Science Quarterly* as of Sept. 16, 2018, pending final edits requested by the editorial team. Replication files are available on the author's Github account ([github.com/svmiller](https://github.com/svmiller)). **Corresponding author**: svmille@clemson.edu."
 author:
 - name: Steven V. Miller
   affiliation: Clemson University
   email: svmille@clemson.edu
 date: "`r format(Sys.time(), '%B %d, %Y')`"
-abstract: "Gun control is one of the most controversial public opinion debates in the United States for which conventional wisdom suggests mass polarization on the topic leads to policy gridlock. My analysis of 28 waves of General Social Survey data shows this is wrong and generates four key findings: 1) GOP partisanship does not robustly reduce support for gun control; 2) most 'strong' Republicans actually support gun control; 3) polarization of attitudes about gun control is only partial and recent; and 4) our casual assumptions about regional variation in attitudes toward gun control need re-evaluation. I conclude with a discussion of the differences we observe between elite polarization and mass polarization and with implications for the future of gun control advocacy."
-fontfamily: mathpazo
-fontfamilyoptions: sc, osf
-fontsize: 11pt
+abstract: "*Objective*: Gun control is a classic case of policy gridlock and we commonly assume public opinion is at the foundation of this gridlock. However, public opinion analyses of attitudes about gun control often say little about the topic of gun control itself and do not fully leverage our long-running survey data to assess partisan, regional, and temporal trends on attitudes toward gun control. *Methods*: I use over 26 waves of General Social Survey data from 1972 to 2016 to analyze the main public opinion cleavages (partisanship, urban/rural distinctions, and Census regions) of gun control. *Results*: I find that partisanship and ruralness are not robust predictors of attitudes about gun control and that partisan polarization is only partial and recent. Further assumptions about regional variation in attitudes toward gun control need re-evaluation. *Conclusion*: Gun control policy gridlock says more about polarization at the elite-level than mass-level. Future research can also do well to assess issue-linkage concerns on specific gun control policy measures."
+fontfamily: times
+# fontfamilyoptions: sc, osf
+fontsize: 12pt
 keywords: "gun control, political attitudes, public opinion, polarization, elite cues"
-csl: apa.csl
+# csl: apa.csl
 indent: yes
 ---
 
-```{r loadpackages, include=FALSE, cache=FALSE}
-knitr::opts_chunk$set(cache=TRUE,
-                      fig.path = "")
+<!-- 
+
+Gun control is arguably the most salient and divisive policy debate in the United States today and we assume the policy gridlock we have observed over the past few decades follows polarization on the topic at the mass-level. However, our understanding of the public opinion of gun control relies on data with limited spatial and temporal scope or on analyses that treat the issue as an extension of another political science topic, saying little about trends on the issue of gun control itself. My analyses of General Social Survey data from 1972 to 2016 inform a broad audience about American attitudes on gun control and generate four key findings: 1) GOP partisanship and the effect of living in a rural area do not robustly reduce support for gun control; 2) most 'strong' Republicans actually support gun control; 3) partisan polarization of attitudes about gun control is only partial and recent; and 4) our assumptions about regional variation in attitudes toward gun control need re-evaluation. I conclude with implications for future research on this topic.
+
+-->
+
+```{r setup, include=FALSE, message=F, warning=F, results="hide"}
+
+# knitr::opts_chunk$set(fig.path='figs/')
+knitr::opts_chunk$set(cache.path='cache/', cache = TRUE, fig.path = "")
+
+knitr::opts_chunk$set(
+                  fig.process = function(x) {
+                      x2 = sub('-\\d+([.][a-z]+)$', '\\1', x)
+                      if (file.rename(x, x2)) x2 else x
+                      }
+                  )
+```
+
+```{r loadstuff, include=FALSE}
+# knitr::opts_chunk$set(fig.path = "")
 setwd("~/Dropbox/projects/gss-guns")
 
 library(arm)
@@ -51,6 +70,7 @@ library(tidyverse)
 library(forcats)
 library(stevemisc)
 library(merTools)
+library(kfigr)
 
 rd <- function(val) { sub("^(-?)0.", "\\1.", sprintf("%.3f", val)) }
 
@@ -127,12 +147,16 @@ make_qi_row <- function(sims, var, lab, logit=TRUE) {
 
 ```
 
-```{r loaddata, include=FALSE}
+```{r loaddata, echo=F, warning=F, message=F}
 # knitr::opts_chunk$set(cache=TRUE) 
-GSS7216 <- haven::read_dta("~/Dropbox/data/gss/GSS7216_R1a.dta")
+# GSS7216 <- haven::read_dta("~/Dropbox/data/gss/GSS7216_R1a.dta")
+GSS7216 <- readRDS("~/Dropbox/data/gss/gss7216-r1a.rds")
+
+# sjmisc::find_var(GSS7216, "zip", out = "table")
+# xnorcsiz = place size
 
 GSS7216 %>%
-  select(region, gun, gunlaw, gunimp, guninfo, gunfirm, owngun, rowngun, gun12, gunsales, gunsdrug, semiguns, guns911, othguns, shotgun, hgunlaw, hguncrim, crimup, crimdown, gunage, gunsdrnk, pistol, rifle, age, educ, degree, race, rincome, rincom06, partyid, sex, ethnic, year) %>%
+  dplyr::select(region, gun, gunlaw, gunimp, guninfo, gunfirm, owngun, rowngun, gun12, gunsales, gunsdrug, semiguns, guns911, othguns, shotgun, hgunlaw, hguncrim, crimup, crimdown, gunage, gunsdrnk, pistol, rifle, age, educ, degree, race, rincome, rincom06, partyid, sex, ethnic, xnorcsiz, news, year) %>%
   mutate(regioncondensed = NA,
          regioncondensed = ifelse(region == 8 | region == 9, "West", regioncondensed),
          regioncondensed = ifelse(region == 3 | region == 4, "Midwest", regioncondensed),
@@ -183,67 +207,135 @@ GSS %<>%
          female = car::recode(sex, "1=0; 2=1"),
          hispanic = ifelse(ethnic == 17 | ethnic == 22 | 
                              ethnic == 25 | ethnic == 32 | 
-                             ethnic == 38, 1, 0))
+                             ethnic == 38, 1, 0),
+         rural = ifelse(xnorcsiz %in% c(9, 10), 1, 0),
+         z_news = arm::rescale(news))
 
 write_csv(GSS, "gss-guns-data.csv")
 ```
 
+
+```{r models1, eval=TRUE, echo=FALSE, tidy = TRUE, size="small", cache=TRUE, results="asis", warning=F}
+M1 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+              (1 + z_partyid | year) + (1 + z_partyid | regioncondensed), 
+            data=subset(GSS), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+
+ranef(M1)$year %>%
+  rownames(.) %>%
+  as.numeric(.) -> years
+
+M2 <- glmer(gunsalesd ~ z_age + collegeed + female + black + otherrace + rural + z_partyid + owngund + 
+              (1 + z_partyid | regioncondensed), data=GSS, family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+M3 <- glmer(gunsdrugd ~ z_age + collegeed + female + black + otherrace + rural + z_partyid + owngund + 
+              (1 + z_partyid | regioncondensed), data=GSS, family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+M4 <- glmer(semiguns ~ z_age + collegeed + female + black + otherrace + rural + z_partyid + owngund + 
+              (1 + z_partyid | regioncondensed), data=GSS, family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+M5 <- glmer(gunsdrnk ~ z_age + collegeed + female + black + otherrace + rural + z_partyid + owngund + 
+              (1 + z_partyid | regioncondensed), data=GSS, family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+M6 <- glmer(guns911 ~ z_age + collegeed + female + black + otherrace + rural + z_partyid + owngund + 
+              (1 + z_partyid | regioncondensed), data=GSS, family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000))) 
+```
+
 # Introduction
 
-Gun control is one of the most controversial public policy issues in the United States. Its salience has only increased after recent domestic terror incidents in places like the Pulse night club and the Inland Regional Center in San Bernardino. The San Bernadino incident in particular led to a strong reaction from some leading newspapers trying to push this debate into legislative action. The *New York Daily News* ran a front-page cover that engaged in deliberate issue linkage of the San Bernardino incident with other semi-automatic rampages in Aurora, Colorado Springs, and Newtown, labeling all as "terrorists" [@nydn2015ht]. The *New York Times* even dusted off a device it had not used in 95 years---the front-page editorial---to argue that legislative unwillingness to push sensible gun control legislation into law is a "moral outrage and national disgrace" [@nyt2015egea]. Successive incidents since, prominently the October 2017 mass shooting in Las Vegas that now ranks as the deadliest individual act of mass murder in U.S. history, only raise more questions about our gun laws and the salience of this controversial public policy debate. The demonstrations by the *New York Daily News* and *New York Times* still resonate among gun control advocates in light of more current events.
+Gun control is one of the most controversial public policy issues in the United States. Its salience has only increased after recent mass shootings in places like the Pulse night club and the Inland Regional Center in San Bernardino. The San Bernardino incident in particular led to a strong reaction from some leading newspapers trying to push this debate into legislative action. The *New York Daily News* ran a front-page cover that engaged in deliberate issue linkage of the San Bernardino incident with other semi-automatic rampages in Aurora, Colorado Springs, and Newtown, labeling all as "terrorists" [@nydn2015ht]. The *New York Times* even dusted off a device it had not used in 95 years---the front-page editorial---to argue that legislative unwillingness to push sensible gun control legislation into law is a "moral outrage and national disgrace" [@nyt2015egea]. Successive incidents since, prominently the October 2017 mass shooting in Las Vegas that now ranks as the deadliest individual act of mass murder in U.S. history, only raise more questions about our gun laws and the salience of this controversial public policy debate. The demonstrations by the *New York Daily News* and *New York Times* still resonate in light of more current events.
 
 <!-- , most recently the Fort Lauderdale-Hollywood International Airport shooting in January 2017, In this most recent case, a shooter, who had previously drawn the suspicion of his local FBI field office  [@sholchetalmasy2017flas], exploited a checked baggage loophole that allowed him to check a hand gun for the cause of a rampage in what is otherwise one of the most secure locations in the United States (i.e. a commercial aiport). -->
 
-The *New York Daily News* and *New York Times* made these demonstrations because gun control legislation is a non-starter in Congress. The day after the San Bernardino incident, Senate Republicans voted down legislation that would have closed background check loopholes and banned subjects on the terror watch list from purchasing firearms [@joseph2015srvd]. Republican opposition was almost unanimous, which conforms to the preferences of the National Rifle Association (NRA) on this issue. The implication here is Republican opposition to any gun control legislation follows the direct preferences of its core interest groups and its constituents. In a heavily polarized political climate, gun control legislation is a non-starter as long as Republicans control Congress or are in a position to filibuster gun control legislation. This speaks well to political science scholarship that says public opinion [e.g. @pageshapiro1983epop], especially on salient issues [@burstein2003ipo], drives public policy in the United States.
+The *New York Daily News* and *New York Times* made these demonstrations because gun control legislation is a non-starter in Congress. The day after the San Bernardino incident, Senate Republicans voted down legislation that would have closed background check loopholes and banned subjects on the terror watch list from purchasing firearms [@joseph2015srvd]. Republican opposition was almost unanimous, which conforms to the preferences of the National Rifle Association (NRA) on this issue. The implication here is Republican opposition to any gun control legislation follows the direct preferences of its core interest groups and its constituents. This speaks well to political science scholarship that says public opinion [e.g. @pageshapiro1983epop], especially on salient issues [@burstein2003ipo], drives public policy in the United States. Gridlock may best define gun control policy of the past several decades and public opinion is the foundation of this gridlock. However, much of what we know about the public opinion of gun control is incomplete. That studies that most inform us about the public opinion of gun control rely on weak data with limited spatial or temporal scope or are more interested in the topic as an extension of other topics in political science (e.g. elite messaging, information environments). None leverage our longest-running American survey data sets to fully explore the trends in the public opinion of gun control that otherwise inform our intuitions.
 
-My analysis of a 44-year span of General Social Survey data tells a mixed story of the conventional wisdom that Republican leaders block gun control legislation because Republican voters are against it. I find that Republican partisanship does not robustly reduce support for gun control and that most Republicans actually support gun control. Gun control is not necessarily a partisan issue over time even if it has quickly become one. I also find that the American West, not the South, is where support for gun control is the lowest. I conclude that there is still substantial support for even meaningful gun control legislation and that a lot of conventional wisdom about gun control merits re-evaluation.
+In this article, I report an analysis of a 44-year span of General Social Survey data to fully explore the public opinion of gun control. I take care to relate the findings to the important cleavages that a review of the literature will emphasize: partisanship, urban/rural divides in America, and regional variation across the Midwest, Northeast, South, and West. My findings tell a mixed story about these cleavages and offer clarifications of conventional wisdom. I find not robust effect for rural respondents on opposition to gun control. I also find that increasing Republican partisanship does not robustly reduce support for gun control and that most Republicans actually support gun control. Gun control is not necessarily a partisan issue over time even if it has quickly become one. I also find that the regional variation in attitudes about gun control belie simple statements that emphasize opposition in the South and the West. I conclude that there is still substantial support for gun control legislation and that a lot of conventional wisdom about gun control merits re-evaluation.
 
-# Methods
 
-I use General Social Survey (GSS) data for all available years from 1972 to 2016. The primary question of interest---whether the respondent favors or opposes a law that would require a person to obtain a police permit before he or she could buy a gun---is the most ubiquitous gun control item in the GSS. Its utility for the sake of this analysis is multiple. One, it appears in 28 of the 31 available GSS waves from 1972 to 2016.<!--[^notasked] --> Other gun control items that appear in GSS are one-time questions. Two, the substance of the gun control question that GSS asks is subtly aggressive. It prompts the respondent to ask whether state approval for a gun of any kind is necessary when gun control opponents tend to cite precisely this kind of state overreach as justification for a maximalist interpretation of the Second Amendment to the U.S. Constitution. Thus, gun control advocates and interested lawmakers in Washington almost never express a gun control proposal like this, instead preferring to massage objections from gun control opponents with policies that target gun show loopholes, terror watch lists, or military-style rifles like the AR-15. GSS respondents that favor this form of gun control are signaling their willingness to accept other aggressive gun control measures. I keep the binary nature of this variable where a 1 indicates support of this form of gun control.
+# Gridlock and What We Know About the Public Opinion of Gun Control
+<!--
+1. Spitzer has his argument about policy gridlock, in which public opinions, or values, are a critical component. This would build on the examples I've provided. Generally, what we know of the public opinion of gun control comes via concern for policy gridlock or is an extension of some other topic (e.g. issue framing).
+2. The biggest obstacle may be partisanship, for obvious reasons.
+3. Another obstacle: regional variation in public opinion, which clusters into votes.
+4. Related to that: urban/rural
+--> 
+
+Academic research about gun control policy in the U.S. spans social science disciplines as diverse as criminal justice, political science, and sociology, but share two recurring themes. The first is an identification that gun control policy is a classic case of gridlock. Spitzer's [-@spitzer2015gaa] summary notes gun control policy, for the most part, still hews to maximalist interpretations of the Second Amendment to the United States Constitution as it applied to the immediate post-independence of the country. The 13 newly independent states, which all hugged the Atlantic Coast and were surrounded by territories held by hostile foreign powers (prominently Britain), saw this amendment to its new constitutional charter as useful for the mobilization of a militia in the event of another invasion of foreign forces. This does not suggest the U.S. has never had substantively important gun control movements succeed in the past. Indeed, gun control regulations are as old as the colonial United States itself. The exigencies of Prohibition-era gang violence saw a slew of gun control initiatives passed by state governments and Congress that especially targeted automatic weapons these gangs would use. However, these historical facts, and even the state-by-state variation in states as diverse as New York and Wyoming, belie that gun control policy and interpretations of the constitutionality of gun control are still tightly tethered to the country's independence even as the United States today barely resembles the United States of 1787 in almost every other respect.
+
+@spitzer2015pgc explains what the cycle of gridlock has resembled of late. It starts with a dramatic event that generates widespread public outrage, for which examples that highlight the gridlock problem span from the 1989 Cleveland Elementary School shooting in California to more recent mass shootings in places like Newtown, Colorado Springs, San Bernardino, Orlando, and Parkland (among several others). Popular outrage leads to calls from gun control proponents to pass stronger gun control laws, ultimately articulating economic language that cheap gun supply decreases the costs associated with large-scale violence and that gun control intervention would raise the costs (and decrease the likelihood) of these events [c.f. @wintemute2005ggv; @bartleywilliams2018rgs]. However, the reaction from anti-gun control groups, prominently the National Rifle Association (NRA), blocks almost all of these initiatives. Even the first Bush Administration found it difficult to reconcile how banning military-style rifles, like the one used by Patrick Purdy in the 1989 Cleveland Elementary School shooting, would spare sporting rifles of interest to the members of the NRA and the Republican voting bloc. The Bureau of Alcohol, Tobacco, and Firearms (ATF) later imposed a ban on "assault weapons" after this incident, which Congress later codified into the 1994 Federal Assault Weapons Ban. This had a 10-year window that expired in 2004 and Congress has yet to pass another similar policy in light of more recent shootings from Columbine to Majory Stoneman Douglas. The policy gridlock story is ultimately one of outrage, action, and a reaction that blocks changes to the gun control status quo.
+
+The theme of gridlock implies a second shared theme of gun control research. Gridlock may define American gun policy but mass-level public opinion is at the foundation of this policy inertia. Spitzer's [-@spitzer2015pgc] gridlock cycle begins with a dramatic event that stokes mass-level public opinion for increased gun control measures to prevent the recurrence of these events. The reaction from gun control opponents siphons the public opinion of guns rights activists through groups like the National Rifle Association to lobby state and national politicians to oppose gun control measures. Policy gridlock follows in an American political system with a myriad of institutional barriers to legislation, but mass-level public opinion on gun control is the foundation on which this gridlock operates. A review of research that speaks to this will identify three main cleavages by which we can understand how public opinion influences policy gridlock on gun control [@pattersoneakins1998cgc].
+
+<!-- 
+
+Okay, I think I got it. Here: 1) review what we know about what coincides with this gridlock. Then:
+2) discuss how the data are often weak/unrepresentative/anachronistic or less interested in gun control opinions.
+
+-->
+
+Partisanship might be the biggest and most obvious component of the public opinion foundation to gun control policy gridlock. Gun rights activists today have found a home in the Republican Party. They serve as a core component of the Republican base the extent to which the NRA has successfully connected gun rights issues to the overall "conservative" movement that unifies a GOP voting base that may otherwise have opposing interests on other core GOP policies [@horwitzanderson2009gdii]. Likewise, gun control advocates have increasingly found a sympathetic audience with the Democratic Party after gun owners and gun rights activists sorted into the GOP. The partisanship divide on gun control is evident when Senate Democrats react to events like the San Bernardino shooting by introducing legislation that would have closed background check loopholes, which Senate Republicans unanimously rejected. The implication is partisanship at the mass-level is also a major public opinion barrier to gun control legislation. Existing studies on the public opinion of gun control routinely find partisan differences between self-identified Republicans and Democrats that provide further intution to this argument [e.g. @haidermarkeljoslyn2001gpot; @pearsonmerkowitzdyck2017cp].
+
+Other public opinion components of gun control policy gridlock speak more to the distribution of gun control attitudes than the ideological or partisan attitudes that may influence them. Here, research has generally found two different but related components of gun control public opinion. The first is a clear urban/rural divide in which rural Americans oppose gun control measures while respondents in cities are more open to gun control measures, all things considered [e.g. @erskine1972pgc; @boorbair1990srhc]. Intuitively, rural Americans, especially those with farm or livestock, are more likely to have firearms than city dwellers and are more likely to have practical uses for them (e.g. pest control or euthanizing sick livestock). They are thus more likely to oppose gun control measures that they interpret as infringing on their interests [@wolpertgimpel1998sisp].
+
+Regional variation constitutes the third cleavage in the public opinion on gun control and the policy gridlock that follows. Opposition to gun control clusters more in the South and the West, certainly in relation to the Northeast. Arguments for why this regional variation emerges highlight the symbolic importance of guns to "Southernness" and Southern culture, even connecting the proliferation of guns in the region and opposition to gun control to traditions that emerged proximate to the Civil War [e.g.  @dixonlizotte1987goss; @brennanetal1993gsgc]. Arguments about opposition to gun control in the West say less about history and culture and tend to focus more on guns as recreational activity in an area of the United States more rural than most of the Northeast [c.f. @gimpel1998php; @wolpertgimpel1998sisp]. Despite major metropolitan areas in states on the Pacific Ocean, the West Census region features states more like Idaho in the Mountain division than California in the Pacific division. The implications are that gridlock follows in a political system that emphasizes rural votes and rural states more than votes in urban areas and more populated states [@pagegillens2017da] with the U.S. Senate being the clearest illustration of this disproportionality. Thus, the public opinion of gun control policy gridlock is as much a function of the distribution of gun control opposition in a political system like the United States.
+
+Gun control policy is a case of policy gridlock and a review of scholarship from fields like criminal justice, political science, and sociology will do well to capture the public opinion cleavages behind this gridlock. However, two limitations emerge for a general public and academic community who want to know more about the public opinion of gun control. First, political scientists interested in this topic will note that analyses that focus on gun control are not much interested in the problem of gun control itself. Instead, analyses on the public opinion of gun control in political science treat this issue as an extension or new testing grounds of other hypotheses or topics. @haidermarkeljoslyn2001gpot and @pearsonmerkowitzdyck2017cp use the topic of gun control as the context for original surveys on broader topics of issue frames and how partisanship distorts information received from a respondent's geographic or social environment. @filindrakaplan2016rrw do well to examine attitudes about gun control but are mostly interested in a hypothesized effect of racial resentment on the gun policy preferences of white Americans. The results that follow are informative and help us locate some of the public opinion cleavages of gun control, but the analyses speak to other topics and concerns in political science. @gimpel1998php and @wolpertgimpel1998sisp also help us understand the faultlines in the public opinion on gun control but the main topic of interest in both analyses is the intersection of gun control between self-interest calculations and symbolic politics [c.f. @searsetal1980sisp]. This comment is not intended to downplay these contributions to what we know about the public opinion of gun control. However, these works are speaking to different concerns. The analyses they provide are not exhaustive in the broad correlates and trends of the public opinion of gun control.
+
+Second, the data used to illuminate the public opinion of gun control are often weak, relying on peculiar samples that are limited in spatial or temporal scope. It is not uncommon for scholarship, especially in criminal justice or sociology, to rely on convenience samples of college students [e.g. @payneriedel2002gca], opinion surveys from the National Rifle Association that may be as old as 20 years before the publication of the analysis [e.g. @brennanetal1993gsgc], cross-sectional samples that do not speak to temporal trends [e.g. @gimpel1998php; @pearsonmerkowitzdyck2017cp; @wozniak2017pogc], or samples from the author's state from which it may be difficult to generalize nationally [e.g. @lizottebordua1980fosp; @haidermarkeljoslyn2001gpot]. Few leverage our long-running nationally representative survey data sets that do feature questions on gun control. Erskine's [-@erskine1972pgc] was impressive in scope for the time, but her trends end in the year of publication and well before gun control emerged as a major partisan issue. Likewise, @wolpertgimpel1998sisp do well to leverage multiple samples at multiple points in time, but it should be unsurprising that their analysis, rooted largely in survey data from the 1980s, does not find strong evidence of the partisan rifts on gun control that emerged at the time of publication in 1998.
+
+There is real value in the empirical analyses that I propose to conduct, which incorporate General Social Survey data from 1972 to 2016 to uncover and elaborate the broad correlates of the public opinion of gun control in the United States. Such an analysis would clarify much of our conventional wisdom about the public opinion of gun control at an important time in which the issue is one of the most salient policy issues in the United States. The next section will briefly describe the data and the methods I use before proceeding to full analyses of the data.
+
+
+# Research Design and Methods
+
+I use General Social Survey (GSS) data for all available years from 1972 to 2016. The primary question of interest---whether the respondent favors or opposes a law that would require a person to obtain a police permit before he or she could buy a gun---is the most ubiquitous gun control item in the GSS. Its utility for the sake of this analysis is multiple. One, it appears in almost all of the 31 available GSS waves from 1972 to 2016.<!--[^notasked] --> Other gun control items that appear in GSS are one-time questions. Two, the substance of the gun control question that GSS asks is subtly aggressive. It prompts the respondent to ask whether state approval for a gun of any kind is necessary when gun control opponents tend to cite precisely this kind of state overreach as justification for a maximalist interpretation of the Second Amendment to the U.S. Constitution. Thus, gun control advocates and interested lawmakers in Washington almost never express a gun control proposal like this, instead preferring to massage objections from gun control opponents with policies that target gun show loopholes, terror watch lists, or military-style rifles like the AR-15. GSS respondents that favor this form of gun control are signaling their willingness to accept other aggressive gun control measures. I keep the binary nature of this variable where a 1 indicates support of this form of gun control.
 
 <!-- [^notasked]: The question was not asked in 1978, 1983, or 1986. -->
 
 I also select data from the 2006 wave that features more granular questions about gun control policies. These include background checks for private sales, tougher penalties for illegal gun sales than drug sales, limiting semi-automatic weapons the police and military, making it illegal to carry a gun while drunk, and support for tougher gun control legislation as a function of the 9/11 terrorist attacks. These are binary variables that assume a value of 1 for respondents that favor a more aggressive gun control proposal.
 
-The primary independent variable of interest is partisanship. This is the familiar seven-point partisanship question that ranges from "strong Democrat" to "strong Republican." I also include variables for age, sex (female), whether the respondent has a college education, fixed effects for race (leaving whites as the baseline), and whether the respondent has a gun in the household.
+I am testing three main explanatory factors of interest. We commonly assume that the public opinion of gun control policy gridlock is a function of partisan faultlines and the distribution of public opinion against gun control in rural areas and the South and the West. Stated more formally, I am evaluating the following hypotheses:
 
-All dependent variables are binary, making the use of a logistic regression appropriate. However, there is important spatial and temporal heterogeneity across the 28 waves of GSS data that I use in my analysis. I account for this with mixed effects models with random effects for the condensed Census region in which the respondent resides and, for the primary dependent variable, the year of the survey. I allow the effect of partisanship to vary by region and condensed Census region. I also scale all non-binary independent variables by two standard deviations to ensure rough comparability of coefficients [@gelman2008sri].
+\begin{hypothesis}
+\begin{minipage}[t]{5.1 in}
+Respondents who self-identify as more Republican are less likely to support gun control than respondents who self-identify as more independent or as more Democratic.
+\end{minipage}
+\end{hypothesis}
+
+\begin{hypothesis}
+\begin{minipage}[t]{5.1 in}
+Respondents who live in rural areas are less likely to support gun control than respondents who live in urban areas.
+\end{minipage}
+\end{hypothesis}
+
+\begin{hypothesis}
+\begin{minipage}[t]{5.1 in}
+Respondents who live in the South or the West are less likely to support gun control than respondents who live in the Midwest or Northeast.
+\end{minipage}
+\end{hypothesis}
+
+I code these variables in the following way. First, I code partisanship on the familiar seven-point scale, where a respondent places her/his political affinities from a continuum of "strong Democrat" to "strong Republican." Higher values communicate more partisanship with the GOP. I code whether the respondent lives in a rural area by whether the GSS data codes the respondent as living in a town of fewer than 2,500 people or whether they live in an open country. Respondents who live in a town of more than 2,500 people are coded as not rural or "urban" by this understanding that squares with how the United States Census Bureau outlined these terms in the 2010 Census.[^link] Finally, the GSS codes the condensed Census region---Midwest, Northeast, South, or West---in which the respondent lives. I include this in my analysis, though I will model these as random effects in the mixed effects modeling framework to better assess differences among regions. This has the benefit of allowing for more flexibility in modeling variation of different coefficients by these categories (i.e. allowing varying slopes for partisanship by region) and avoids the awkward implementation of selectively choosing a region to be baseline comparison in a fixed effects framework. Figure `r figr("simregionsimple", TRUE, type="Figure")`, `r figr("simgoprevol", TRUE, type="Figure")`, and `r figr("simyearregion", TRUE, type="Figure")` will highlight the benefit of this approach.
+
+[^link]: https://www.census.gov/geo/reference/ua/uafaq.html
+
+I include additional control variables for the respondent's age (in years), sex (a dummy for women), whether the respondent has a college education, fixed effects for race (leaving whites as the baseline), and whether the respondent has a gun in the household.
+
+All dependent variables are binary, making the use of a logistic regression appropriate. However, there is important spatial and temporal heterogeneity across the `r length(years)` waves of GSS data that I use in my analysis. I account for this with mixed effects models with random effects for the condensed Census region in which the respondent resides and, for the primary dependent variable, the year of the survey. I allow the effect of partisanship to vary by region and condensed Census region. I also scale all non-binary independent variables by two standard deviations to ensure rough comparability of coefficients [@gelman2008sri].
 
 # Results
 
-My analyses of 28 waves of GSS data over 44 years suggest four interesting findings about public opinion and the gun control debate. First, partisanship with the Republican party does not robustly reduce support for gun control. Second, most Republicans actually support gun control, even in the current polarized political climate. Third, gun control is not necessarily a partisan issue but it is quickly becoming one. Finally, simple assumptions about regional variation mask important and more intriguing variation on attitudes toward gun control in the data.
+My analyses of `r length(years)` waves of GSS data over 44 years suggest four interesting findings about public opinion and the gun control debate. First, partisanship with the Republican party and ruralness do not robustly reduce support for gun control. Second, most Republicans actually support gun control, even in the current polarized political climate. Third, gun control is not necessarily a partisan issue but it is quickly becoming one. Finally, simple assumptions about regional variation mask important and more intriguing variation on attitudes toward gun control in the data.
 
-## Partisanship Does Not Robustly Reduce Support for Gun Control
+## Partisanship and Ruralness Do Not Robustly Reduce Support for Gun Control
 
-Partisanship might be our go-to explanation for individual-level support for gun control. The implication is increasing identification with the Republican Party decreases support for gun control given the many cues Republican elites send to their voters about gun control [c.f. @zaller1992nomo]. However, the partisanship-gun control relationship is not nearly as robust at the individual-level as we infer it to be at the elite-level.
-
-```{r models1, eval=TRUE, echo=FALSE, tidy = TRUE, size="small", cache=TRUE, results="asis", warning=F}
-M1 <- glmer(gunlaw ~ z_age + collegeed + female + black + otherrace + z_partyid + owngund +
-              (1 + z_partyid | year) + (1 + z_partyid | regioncondensed), 
-            data=subset(GSS), family=binomial(link="logit"), 
-            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
-
-M2 <- glmer(gunsalesd ~ z_age + collegeed + female + black + otherrace + z_partyid + owngund + 
-              (1 + z_partyid | regioncondensed), data=GSS, family=binomial(link="logit"), 
-            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
-
-M3 <- glmer(gunsdrugd ~ z_age + collegeed + female + black + otherrace + z_partyid + owngund + 
-              (1 + z_partyid | regioncondensed), data=GSS, family=binomial(link="logit"), 
-            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
-
-M4 <- glmer(semiguns ~ z_age + collegeed + female + black + otherrace + z_partyid + owngund + 
-              (1 + z_partyid | regioncondensed), data=GSS, family=binomial(link="logit"), 
-            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
-
-M5 <- glmer(gunsdrnk ~ z_age + collegeed + female + black + otherrace + z_partyid + owngund + 
-              (1 + z_partyid | regioncondensed), data=GSS, family=binomial(link="logit"), 
-            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
-
-M6 <- glmer(guns911 ~ z_age + collegeed + female + black + otherrace + z_partyid + owngund + 
-              (1 + z_partyid | regioncondensed), data=GSS, family=binomial(link="logit"), 
-            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000))) 
-```
+Table 1 summarizes the results of six mixed effects regression models on the dependent variables I coded from the GSS data. The results yield few predictors with consistent effects across most estimations. The effect of having a gun in the household has a negative and significant effect in five of six estimations, with attitudes toward making it illegal to carry a gun while drunk as the lone exception. Generally, respondents with guns in their household (i.e. gun-owners) are less likely to support gun control measures they see as infringing on their material interest, consistent with intuition from @wolpertgimpel1998sisp. Further, women are more likely to support gun control measures than men. Imposing stiffer penalties for illegal gun sales than illegal drug sales is the only gun control policy measure for which there was no discernible difference between men and women.
 
 ```{r table1text, eval=TRUE, echo=FALSE, tidy = TRUE, size="small", cache=FALSE, results="hide", message=F, warning=F}
 # Table1 <- capture.output(
@@ -253,7 +345,7 @@ Table1 <- capture.output(stargazer(M1, M2, M3, M4, M5, M6, type="text", style="a
                                    header=FALSE, font.size="small",
                                    covariate.labels=c("Age", "College Educated", "Female",
                                                       "Black", 
-                                                      "Other Race (Not White)", 
+                                                      "Other Race (Not White)", "Rural",
                                                       "Party ID (D to R)",
                                                       "Gun in the Household"), 
           dep.var.labels.include = FALSE, 
@@ -276,14 +368,13 @@ cat(Table1, sep = "\n", file = "tab-reg-text.txt")
 
 ```
 
-
 ```{r table1latex, eval=TRUE, echo=FALSE, tidy = TRUE, size="small", cache=FALSE, results="asis", message=F, warning=F}
 require(stargazer)
 Table1 <- capture.output(stargazer(M1, M2, M3, M4, M5, M6, type="latex", style = "ajps",
-                                   title="Mixed Effects Models of Attitudes toward Gun Control",
+                                   title="Mixed Effects Models of Attitudes Toward Gun Control",
                                    header=FALSE, font.size="small",
                                    covariate.labels=c("Age", "College Educated", "Female", "Black", 
-                                                      "Other Race (Not White)", "Party ID (D to R)", "Gun in the Household"),
+                                                      "Other Race (Not White)", "Rural", "Party ID (D to R)", "Gun in the Household"),
                                    #dep.var.labels=c("Require Police Permit?", "Background Check for Private Sales?", 
                                   #                  "Tougher Penalties than Selling Drugs?", 
                                    #                 "Limit Semi-Automatics to Police/Military?",
@@ -297,9 +388,9 @@ Table1 <- capture.output(stargazer(M1, M2, M3, M4, M5, M6, type="latex", style =
                                           #"\\footnotesize \\emph{for simple presentation.}")
 ))
 
-Table1[26] <- "\\multicolumn{7}{l}{\\scriptsize $^{*}$p $<$ .05} \\\\ "
+Table1[28] <- "\\multicolumn{7}{l}{\\scriptsize $^{*}$p $<$ .05} \\\\ "
 
-Table1 <- c(Table1[a <- 1:23], "\\hline ", Table1[-a])
+Table1 <- c(Table1[a <- 1:25], "\\hline ", Table1[-a])
 
 
 modelnames <- c("\\\\[-1.8ex] & \\emph{} & \\emph{Background} & \\emph{Tougher} &
@@ -341,25 +432,289 @@ bind_rows(m1df, m2df, m3df, m4df, m5df, m6df) %>%
                      female = "Female",
                      black = "Respondent is Black",
                      otherrace = "Respondent is Other Race (Not White)",
+                     rural = "Rural",
                      z_partyid = "Party ID (D to R)",
                      owngund = "Gun Owner")) %>%
   dwplot(.,dot_args = list(aes(colour = model, shape = model), size = 2)) + theme_steve() +
   geom_vline(xintercept = 0, linetype = 2) +
   theme(legend.position = "bottom") +
   labs(caption="Data: General Social Survey, 1972-2016. Random effect parameters (i.e. slope and intercept standard deviations) omitted for presentation.",
-       title="Partisanship Does Not Have a Robust Effect on Attitudes Toward Gun Control",
-       subtitle = "Increasing partisanship with the GOP only decreases support of requiring a police permit and increasing gun control as a function of 9/11.")
+       #title="Partisanship Does Not Have a Robust Effect on Attitudes Toward Gun Control",
+       #subtitle = "Increasing partisanship with the GOP only decreases support of requiring a police permit and increasing gun control as a function of 9/11."
+       
+       )
 ```
+
+
+However, our go-to explanations for how public opinion at the mass-level explains policy gridlock at the elite-level do not enjoy similar levels of support. The partisanship-gun control relationship is not as robust at the individual-level as we infer it to be at the elite-level. Partisan differences appear in just two of the six estimations in Table 1. Increasing partisanship with the GOP coincides with less support for requiring a police permit before purchasing a gun and for making gun control laws tougher as a function of the 9/11 terror attacks. Likewise, the effect of a respondent living in a rural area is negative and significant in just two estimations, decreasing support for requiring a police permit to purchase guns and decreasing support for imposing stiffer penalties for illegal gun sales than illegal drug sales.
+
+A "secret weapon" plot will communicate a similar story. "Secret weapon" is shorthand for a dot-and-whisker plot that summarizes multiple models that can better visualize time trends that would be lost if the data were pooled or even partially pooled (i.e. as a mixed effects model)  [@gelman2005sw]. Here, this means running a series of models for each available year in the GSS data on the measure about requiring police permits for gun purhases and reporting the results as faceted plots.[^missing]
+
+[^missing]: The variable for other non-white and non-black races had separation problems in the analyses in 1974, 1977, and 1980. Intuitively, there were only seven, 15, and 10 non-white/non-black respondents in these respective years, creating estimation problems. I dropped the variable from those years. The question about having a gun in the home first appears in 1973, which explains why estimations that include that covariate must drop the 1972 wave from the analysis.
+
+```{r swmodels, eval=TRUE, echo=FALSE, tidy = TRUE, size="small", cache=TRUE, results="asis", warning=F}
+
+y72 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + 
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 1973), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+y73 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 1973), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+y74 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black +  rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 1974), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000))) # only 7 other race
+
+y76 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 1976), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000))) 
+
+y77 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 1977), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000))) # only 15 other race
+
+y80 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 1980), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000))) # only 10 other race
+
+y82 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 1982), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+y84 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 1984), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+y85 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 1985), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+y87 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 1987), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+y88 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 1988), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+y89 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 1989), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+y90 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 1990), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+y91 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 1991), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+y93 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 1993), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+y94 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 1994), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+y96 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 1996), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+y98 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 1998), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+y00 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 2000), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+y02 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 2002), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+y04 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 2004), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+y06 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 2006), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+y08 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 2008), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+y10 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 2010), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+y12 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 2012), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+y14 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 2014), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+y16 <- glmer(gunlaw ~ z_age + collegeed + female + 
+              black + otherrace + rural + z_partyid + owngund +
+               (1 + z_partyid | regioncondensed), 
+            data=subset(GSS, year == 2016), family=binomial(link="logit"), 
+            glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+
+
+tidy(y72) %>% mutate(model = 1972) %>%
+  bind_rows(., tidy(y73) %>% mutate(model = 1973)) %>%
+  bind_rows(., tidy(y74) %>% mutate(model = 1974)) %>%
+  bind_rows(., tidy(y76) %>% mutate(model = 1976)) %>%
+  bind_rows(., tidy(y77) %>% mutate(model = 1977)) %>%
+  bind_rows(., tidy(y80) %>% mutate(model = 1980)) %>%
+  bind_rows(., tidy(y82) %>% mutate(model = 1982)) %>%
+  bind_rows(., tidy(y84) %>% mutate(model = 1984)) %>%
+  bind_rows(., tidy(y85) %>% mutate(model = 1985)) %>%
+  bind_rows(., tidy(y87) %>% mutate(model = 1987)) %>%
+  bind_rows(., tidy(y88) %>% mutate(model = 1988)) %>%
+  bind_rows(., tidy(y89) %>% mutate(model = 1989)) %>%
+  bind_rows(., tidy(y90) %>% mutate(model = 1990)) %>%
+  bind_rows(., tidy(y91) %>% mutate(model = 1991)) %>%
+  bind_rows(., tidy(y93) %>% mutate(model = 1993)) %>%
+  bind_rows(., tidy(y94) %>% mutate(model = 1994)) %>%
+  bind_rows(., tidy(y96) %>% mutate(model = 1996)) %>%
+  bind_rows(., tidy(y98) %>% mutate(model = 1998)) %>%
+  bind_rows(., tidy(y00) %>% mutate(model = 2000)) %>%
+  bind_rows(., tidy(y02) %>% mutate(model = 2002)) %>%
+  bind_rows(., tidy(y04) %>% mutate(model = 2004)) %>%
+  bind_rows(., tidy(y06) %>% mutate(model = 2006)) %>%
+  bind_rows(., tidy(y08) %>% mutate(model = 2008)) %>%
+  bind_rows(., tidy(y10) %>% mutate(model = 2010)) %>%
+  bind_rows(., tidy(y12) %>% mutate(model = 2012)) %>%
+  bind_rows(., tidy(y14) %>% mutate(model = 2014)) %>%
+  bind_rows(., tidy(y16) %>% mutate(model = 2016)) %>%
+  tbl_df() %>%
+  filter(term != "(Intercept)" & group == "fixed") %>%
+  mutate(term = forcats::fct_relevel(term,
+                                     "z_age", "collegeed", "female", "black",
+                                     "otherrace", "rural", "z_partyid", "owngund")) %>%
+  mutate(term = forcats::fct_recode(term,
+                                    "Age" = "z_age",
+                                    "Female" = "female",
+                                    "College Educated" = "collegeed",
+                                    "Black" = "black",
+                                    "Other Race (Not White)" = "otherrace",
+                                    "Rural" = "rural",
+                                    "Party ID (D to R)" = "z_partyid",
+                                    "Gun in the Household" = "owngund")) -> swdat
+
+```
+
+
+```{r swplot, eval=TRUE, echo=FALSE, tidy = TRUE, size="small", cache=TRUE, results="asis", warning=F, fig.width=12, fig.height=10, fig.cap="\\label{fig:swplot}A 'Secret Weapon' Plot of the Correlates of Gun Control Support (GSS, 1972-2016)"}
+
+swdat %>%
+    mutate(sig = ifelse(p.value <= .05, 1, 0),
+           possig = ifelse(statistic >= qnorm(.975), 1, 0),
+           negsig = ifelse(statistic <= -qnorm(.975), 1, 0)) %>%
+    group_by(term) %>%
+    summarize(persig = sum(sig)/n()) %>%
+  mutate(persig = paste0("% p < .05: ", mround2(persig),"%"), 
+         estimate = 0, std.error = 0) %>% data.frame -> swdatsums
+
+swdat %>%
+  ggplot(.,aes(x=as.factor(model), y=estimate,
+               ymin=estimate-(1.96*std.error),
+               ymax=estimate+(1.96*std.error))) + 
+  geom_hline(yintercept = 0, linetype="dashed") +
+  theme_steve() +
+  geom_pointrange() + 
+  xlab("") + ylab("Coefficient Estimate") +
+  facet_wrap(~term) + #, scales="free"
+  theme(axis.text.x=element_text(angle=45, hjust=1)) +
+  geom_label(data = swdatsums,
+            mapping = aes(x = Inf, y = -2, label = persig),
+            hjust = 1, size=3, fontface = "bold") +
+  labs(
+       caption = "Data: General Social Survey, 1972-2016. Other race (not white) variable dropped from 1974, 1977, and 1980 analyses for separation concerns. Gun ownership question was not asked in 1972.
+       Annotations in each facet communicate percentage of regressions with significant effects for each unique coefficient.
+       Random effect parameters (i.e. slope and intercept standard deviations for condensed Census region) omitted for presentation.")
+
+```
+
+
+`r figr("swplot", TRUE, type="Figure")` reports these results and annotates each facet with the percentage of all regressions in which the particular coefficient had a statistically significant result. The results show clear and discernible effects for women and having a gun in the household for all `r length(years)` analyses. Every regression produced statistically significant effects for these two coefficients. Notice the effects of a respondent living in a rural area and increasing GOP partisanship produce negative and statistically significant results in just over half of all estimations. In the case of GOP partisanship, negative and discernible effects start to emerge only in the 1990s. The effect of living in a rural area is more reliably negative and significant in earlier survey waves than in later survey waves, especially in the surveys in the 1990s.
+
+Partisanship and urban/rural divides constitute the two main cleavages in the public opinion of gun control that purport to explain gun policy gridlock at the elite-level. However, Table 1 and Figure 1 show the effects are not robust across multiple forms of gun control policies, nor are the effects consistent across time in the GSS data.
+
+<!-- ## Partisanship Does Not Robustly Reduce Support for Gun Control
+
+Partisanship might be our go-to explanation for individual-level support for gun control. The implication is increasing identification with the Republican Party decreases support for gun control given the many cues Republican elites send to their voters about gun control [c.f. @zaller1992nomo]. However, the partisanship-gun control relationship is not nearly as robust at the individual-level as we infer it to be at the elite-level.
+
+
 
 Table 1 summarizes the results from six mixed effects regression models on the dependent variables I coded from the GSS data. Increasing partisanship with the Republican Party does not have robust effects across all six models. Increasing GOP partisanship reduces support for a law that would require a police permit to own a gun and reduces support for tougher gun control laws when gun control is deliberately linked to terror threats after 9/11. However, increasing Republican partisanship does not have a discernible effect on attitudes toward background checks for private sales, tougher penalties for illegal gun purchases than illegal drug sales, limiting semi-automatics to the police and military, and for making it illegal to carry a gun while drunk.
 
+
 Republican partisanship might be the easiest way of thinking about opposition to gun control legislation in the United States but GSS data suggest the effect of Republican partisanship on attitudes toward gun control measures is not robust across multiple forms of gun control policies.
+ -->
 
 ## Most Republicans Actually Support Gun Control
 
-Perhaps the most counterintuitive finding from survey data on attitudes toward gun control is that Republicans generally favor gun control legislation. This is not an anomaly unique to a specific year, nor necessarily a recent trend. There is not a year in the 28 waves of GSS data in which support among *strong* Republicans for a law that would require a police permit for a gun purchase is below 50%.
+Perhaps the most counterintuitive finding from survey data on attitudes toward gun control is that Republicans generally favor gun control legislation. This is not an anomaly unique to a specific year, nor necessarily a recent trend. There is not a year in the GSS data in which support among *strong* Republicans for a law that would require a police permit for a gun purchase is below 50%.
 
-```{r ts1, eval=TRUE, echo=FALSE, tidy = TRUE, size="small", cache=FALSE, results="asis", warning=F, fig.cap="Support for Gun Control among Partisans Over Time", fig.width=9.5, fig.height = 5}
+```{r ts1, eval=TRUE, echo=FALSE, tidy = TRUE, size="small", cache=FALSE, results="asis", warning=F, fig.cap="\\label{fig:ts1}Support for Gun Control Among Partisans Over Time", fig.width=9.5, fig.height = 5}
 
 GSS %>%
   group_by(partyid, year) %>%
@@ -386,16 +741,17 @@ GSS %>%
   scale_linetype(labels=c("Strong Republican", "Independent", "Strong Democrat"), name="Party ID") +
   scale_colour_manual(values=c("#F8766D", "#00BA38", "#619cff"), labels=c("Strong Republican", "Independent", "Strong Democrat"), name="Party ID") + 
   theme(legend.position="bottom") +
-  labs(caption = "Data: General Social Survey (1972-2016)",
-       title = "Most Republicans Actually Support Gun Control",
-       subtitle = "There is not a year in the GSS in which support for requiring police permits among the strong Republicans is below 50%")
+  labs(caption = "Data: General Social Survey (1972-2016)"#,
+       #title = "Most Republicans Actually Support Gun Control",
+       #subtitle = "There is not a year in the GSS in which support for requiring police permits among the strong Republicans is below 50%"
+       )
 
 
 ```
 
-Figure 1 is a time-series line chart of the percentage of responses that favor a law requiring a police permit before a person could buy a gun by partisan identification over the 27 waves from 1972 to 2016 in which that item appears. For clarity, I subset the line chart to just the strong Democrats, the independents who do not lean toward either party, and the strong Republicans. The line chart shows that the lowest support for this form of gun control came in 2012, in which 54.62% of strong Republicans favored this form of gun control. Support among the strong Republicans actually increased almost five percentage points to 59.54% in the two years after the 2012 survey, though fell again to 50.5% in 2016.
+`r figr("ts1", TRUE, type="Figure")` is a time-series line chart of the percentage of responses that favor a law requiring a police permit before a person could buy a gun by partisan identification over all waves from 1972 to 2016 in which that item appears. For clarity, I subset the line chart to just the strong Democrats, the independents who do not lean toward either party, and the strong Republicans. The line chart shows the nadirs in support for gun control among strong Republicans emerge in the most recent waves. 54.62% of strong Republicans favored requiring a police permit for a gun purchase in the 2012 wave. Support among the strong Republicans actually increased almost five percentage points to 59.54% in the two years after the 2012 survey, though fell again to 50.5% in 2016.
 
-Figure 1 does show some other interesting trends over the years. Strong Democrats have become only a little more supportive of gun control over time. 75.16% of strong Democrats favored this gun control measure in 1972, which increased to 83.44% in 2016. Independents who do not lean toward one party have not changed over time. In 1972, support for this form of gun control was 69.23% among those independents, relative to 70.57% in 2016. Interestingly, strong Republicans tracked quite closely with strong Democrats before 1994. The year of the "Republican Revolution", in which the GOP took both chambers of Congress for the first time since 1953, saw support for this form of gun control fall from 82.4% in 1993 to 67.77% in 1994.
+`r figr("ts1", TRUE, type="Figure")` does show some other interesting trends over the years. Strong Democrats have become only a little more supportive of gun control over time. 75.16% of strong Democrats favored this gun control measure in 1972, which increased to 83.44% in 2016. Independents who do not lean toward one party have not changed over time. In 1972, support for this form of gun control was 69.23% among those independents, relative to 70.57% in 2016. Interestingly, strong Republicans tracked quite closely with strong Democrats before 1994. The year of the "Republican Revolution", in which the GOP took both chambers of Congress for the first time since 1953, saw support for this form of gun control among strong Republicans fall from 82.4% in 1993 to 67.77% in 1994.
 
 
 ```{r sims, eval=TRUE, echo=FALSE, tidy = TRUE, size="small", cache=TRUE, results="asis", message=F, warning=F}
@@ -404,7 +760,7 @@ Figure 1 does show some other interesting trends over the years. Strong Democrat
 
 newdata <- with(GSS, 
                 data.frame(gunlaw=0, z_age=0, collegeed=median(collegeed,na.rm=TRUE), female=1,
-                           black=0, otherrace=0, z_partyid=max(z_partyid, na.rm=TRUE), owngund=0,
+                           black=0, otherrace=0, rural=0, z_partyid=max(z_partyid, na.rm=TRUE), owngund=0,
                            year=0, regioncondensed=0)
                 )
 
@@ -421,7 +777,7 @@ fng <- with(M1sims, data.frame(lab="Female, Doesn't Own Gun",
 
 newdata <- with(GSS, 
                 data.frame(gunlaw=0, z_age=0, collegeed=median(collegeed,na.rm=TRUE), female=0,
-                           black=0, otherrace=0, z_partyid=max(z_partyid, na.rm=TRUE), owngund=0,
+                           black=0, otherrace=0, rural=0, z_partyid=max(z_partyid, na.rm=TRUE), owngund=0,
                            year=0, regioncondensed=0)
                 )
 
@@ -438,7 +794,7 @@ mng <- with(M1sims, data.frame(lab="Male, Doesn't Own Gun",
 
 newdata <- with(GSS, 
                 data.frame(gunlaw=0, z_age=0, collegeed=median(collegeed,na.rm=TRUE), female=1,
-                           black=0, otherrace=0, z_partyid=max(z_partyid, na.rm=TRUE), owngund=1,
+                           black=0, otherrace=0,rural=0,  z_partyid=max(z_partyid, na.rm=TRUE), owngund=1,
                            year=0, regioncondensed=0)
                 )
 
@@ -455,7 +811,7 @@ fog <- with(M1sims, data.frame(lab="Female, Gun Owner",
 
 newdata <- with(GSS, 
                 data.frame(gunlaw=0, z_age=0, collegeed=median(collegeed,na.rm=TRUE), female=0,
-                           black=0, otherrace=0, z_partyid=max(z_partyid, na.rm=TRUE), owngund=1,
+                           black=0, otherrace=0, rural=0, z_partyid=max(z_partyid, na.rm=TRUE), owngund=1,
                            year=0, regioncondensed=0)
                 )
 
@@ -473,7 +829,7 @@ mog <- with(M1sims, data.frame(lab="Male, Gun Owner",
 
 newdata <- with(GSS, 
                 data.frame(gunlaw=0, z_age=0, collegeed=1, female=0,
-                           black=0, otherrace=0, z_partyid=max(z_partyid, na.rm=TRUE), owngund=1,
+                           black=0, otherrace=0,rural=0,  z_partyid=max(z_partyid, na.rm=TRUE), owngund=1,
                            year=0, regioncondensed=0)
                 )
 
@@ -497,21 +853,21 @@ TabEVs <- kable(EVs, align=c("l","c","c"), caption="Expected Values of Support f
 #Tabb <- capture.output(stargazer(EVs, type="latex", header=F,
 #          summary=F, rownames=F, title="Expected Values of Support for Police Permits for Gun Purchases Among Strong Republicans"))
 cat(TabEVs, sep = "\n", file = "tab-evs.txt")
-kable(EVs, align=c("l","c","c"), caption="Expected Values of Support for Police Permits for Gun Purchases Among Strong Republicans")
+kable(EVs, align=c("l","c","c"),  caption="Expected Values of Support for Police Permits for Gun Purchases Among Strong Republicans")
 #cat(Tabb, sep='\n') 
 #sink()
 
 ```
 
-Figure 1 clarifies the results from Model 1, telling us that strong Republicans are less likely to support gun control but this should not be confused as equivalent to a statement that strong Republicans are likely to "oppose" gun control. Table 2 tells a similar story with simulations of the regression from a multivariate normal distribution to generate quantities of interest. I set the explanatory variables at their typical values (i.e. white respondents around age 51 without a college education), set the party ID variable at its maximum (i.e. strong Republicans) and allow the gun ownership and gender variable to vary. The simulations show the point estimates for expected value of support for police permits for gun purchases, given the explanatory variables (e.g. women/men, strong GOP, owns gun/does not own a gun) are above .500 in every application. Further, the 95% interval for all expected values from the simulations are above .500 in all but one category: men with strong GOP affiliation, no college education, and with a gun in the home. However, one adjustment to that class of respondent---the presence of a college diploma---increases support for police permits before purchasing a gun to .592 with a 95% distribution of expected values that are above .500.
+`r figr("ts1", TRUE, type="Figure")` clarifies the results from Model 1, telling us that strong Republicans are less likely to support gun control but this should not be confused as equivalent to a statement that strong Republicans are likely to "oppose" gun control. Table 2 tells a similar story with simulations of the regression from a multivariate normal distribution to generate quantities of interest. I set the explanatory variables at their typical values (i.e. urban white respondents around age 51 without a college education), set the party ID variable at its maximum (i.e. strong Republicans) and allow the gun ownership and gender variable to vary. The simulations show the point estimates for expected value of support for police permits for gun purchases, given the explanatory variables (e.g. women/men, strong GOP, owns gun/does not own a gun) are above .500 in every application. Further, the 95% interval for all expected values from the simulations are above .500 in all but one category: men with strong GOP affiliation, no college education, and with a gun in the home. However, one adjustment to that class of respondent---the presence of a college diploma---increases support for police permits before purchasing a gun to .608 with a 95% distribution of expected values that are above .500.
 
-This is an important pedagogical lesson for pundits, scholars, and interested citizens who want to understand variation in public opinion about the gun control debate. Model 1 in Table 1 shows a negative relationship between increasing GOP partisanship and support for a police permit prior to owning a gun that is discernible from a zero relationship. In other words, increasing partisanship with the Republican party decreases support for this form of gun control relative to those with lesser affinity for the GOP (including strong Democrats). The reader can mostly see this story in Figure 1. However, it would be a mistake, both statistical and substantive, to assume that statement is equivalent to "increasing GOP partisanship makes a respondent oppose this form of gun control." This would not be true in this case. Strong Republicans still support this form of gun control, though strong Democrats support it more.
+This is an important pedagogical lesson for pundits, scholars, and interested citizens who want to understand variation in public opinion about the gun control debate. Model 1 in Table 1 shows a negative relationship between increasing GOP partisanship and support for a police permit prior to owning a gun that is discernible from a zero relationship. In other words, increasing partisanship with the Republican party decreases support for this form of gun control relative to those with lesser affinity for the GOP (including strong Democrats). The reader can mostly see this story in `r figr("ts1", TRUE, type="Figure")`. However, it would be a mistake, both statistical and substantive, to assume that statement is equivalent to "increasing GOP partisanship makes a respondent oppose this form of gun control." This would not be true in this case. Strong Republicans still support this form of gun control, though strong Democrats support it more.
 
 ## Gun Control Is Not Necessarily a Partisan Issue, but It Is Becoming One
 
 Most Republicans are on board with gun control measures. However, we are observing a growing rift between Democrats and Republicans on this issue that seems to have increased during the Obama Administration.
 
-Figure \ref{fig:simyear} shows more simulations of the dependent variable from a draw of a multivariate normal distribution for three different values of partisanship---strong Republicans, strong Democrats, and pure independents---across all survey waves with all other explanatory variables held at their typical value. The results show partisan differences first emerging as a result of the Republican Revolution of 1994 but show increasing polarization on this issue that seems to occur almost entirely during the Obama Administration. This coincides with prominent events like the spike in gun sales after Obama's 2008 election [@bohn2008gss] and cues from the NRA that Obama was the most "anti-gun candidate ever" who will "take your guns away" [@smith2008nra]. On average, Republicans are less likely to support this gun control measure than those whose political affinities gravitate more to the Democratic Party. However, Figure \ref{fig:simyear} shows that the effect of GOP partisanship is more pronounced in recent years than it is overall. <!--The effect of GOP partisanship decreases support for gun control even more in 2016 in addition to the overall decrease in support for GOP partisanship on average. In addition, Republican movement against gun control during the Obama Administration had an overall dampening effect on the average level of support for gun control in 2012, 2014, and 2016, as seen in the random intercepts.-->
+`r figr("simyear", TRUE, type="Figure")` shows more simulations of the dependent variable from a draw of a multivariate normal distribution for three different values of partisanship---strong Republicans, strong Democrats, and pure independents---across all survey waves with all other explanatory variables held at their typical value. The results show partisan differences first emerging as a result of the Republican Revolution of 1994 but show increasing polarization on this issue that seems to occur almost entirely during the Obama Administration. This coincides with prominent events like the spike in gun sales after Obama's 2008 election [@bohn2008gss] and cues from the NRA that Obama was the most "anti-gun candidate ever" who will "take your guns away" [@smith2008nra]. On average, Republicans are less likely to support this gun control measure than those whose political affinities gravitate more to the Democratic Party. However, `r figr("simyear", TRUE, type="Figure")` shows that the effect of GOP partisanship is more pronounced in recent years than it is overall, underscoring similar trends in `r figr("swplot", TRUE, type="Figure")` on how partisanship emerges as a negative and significant predictor of attitudes against gun control in waves starting after the Republican Revolution of 1994. <!--The effect of GOP partisanship decreases support for gun control even more in 2016 in addition to the overall decrease in support for GOP partisanship on average. In addition, Republican movement against gun control during the Obama Administration had an overall dampening effect on the average level of support for gun control in 2012, 2014, and 2016, as seen in the random intercepts.-->
 
 <!-- Figure 2 illustrates this by plotting the conditional variances of the random year intercept and random slopes for party identification in a caterpillar plot. The conditional variances do not have the same exact interpretation as a standard error for a fixed effect [e.g. @schall1991eglm; @gelmanhill2007dar], but the reader can think of it as a "starting point." Some years may have higher than "average" support or opposition to requiring police permits for gun purchases. In addition, the random slope for party identification allows preliminary judgments that the effect of increasing GOP partisanship may be stronger or weaker in some years than they were on average. -->
 
@@ -524,6 +880,7 @@ GSS %>%
             female = 0,
             black = 0,
             otherrace = 0,
+            rural=0,
 #            z_partyid = max(z_partyid, na.rm=T),
             owngund = 0,
 regioncondensed = 0)  %>%
@@ -556,27 +913,59 @@ m1yv %>%
   scale_x_continuous(breaks=seq(1972, 2016, 2), name="Year", limits=c(1972, 2016)) + 
   ylab("Simulated Probability of Support for Requiring\na Police Permit Before Obtaining a Gun") +
   theme(legend.position='bottom') +
-  labs(caption = "Data: General Social Survey (1974-2016).",
-       title = "Gun Control Is Not Necessarily a Partisan Issue, but It Is Becoming One",
-       subtitle = "We first observe polarization on gun control after the Republican Revolution and more recently under Obama.") 
+  labs(caption = "Data: General Social Survey (1973-2016)."#,
+       #title = "Gun Control Is Not Necessarily a Partisan Issue, but It Is Becoming One",
+       #subtitle = "We first observe polarization on gun control after the Republican Revolution and more recently under Obama."
+       ) 
 
 #show_ranef(M1,"year")  + theme_steve() + facet_wrap(~variable,scale="free_x", labeller = as_labeller(c(`(Intercept)` = "Intercept", `z_partyid`="Party ID (D to R)"))) + ylab("")
 ```
 
 
-Most Republicans actually support gun control measures and the issue at stake is not necessarily as polarizing at the individual-level as it is at the elite-level. However, it is quickly becoming a partisan issue among the electorate.
+Most Republicans actually support gun control measures and the issue at stake is not necessarily as polarizing at the mass-level as it is at the elite-level. However, it is quickly becoming a partisan issue among the electorate.
 
-## Unintuitive Regional and Temporal Variation in Support for Gun Control
+## The Partisan, Regional, and Temporal Variation in Support for Gun Control
 
-Explanations for attitudes about gun control across regions in the United States tend to make rather broad and simple statements. Southerners love guns, for whatever purpose [e.g @brennanetal1993gsgc], which we think makes Southerners more likely to elect politicians who will fight hard for their interpretation of the Second Amendment to the U.S. Constitution. Likewise, guns are prominent in the the West as well, which might make the region also more opposed to gun control in general [@wolpertgimpel1998sisp].
+Explanations for attitudes about gun control across regions in the United States tend to focus on the South and West. After all, guns purportedly play an outsized role in "Southernness" and Southern culture [e.g. @brennanetal1993gsgc] and the rural nature of most of the West region of the U.S. leads citizens in this region to view guns as essential for farm and livestock matters or for recreation [e.g. @wolpertgimpel1998sisp]. This may explain part of the partisan sorting since the 1990s; Republicans are better represented in most state-level and national-level offices in both regions as a whole. Further, the interest is invariably about these two regions relative to the Midwest and Northeast, which do not command as much attention by comparison. `r figr("simregionsimple", TRUE, type="Figure")` underscores how we commonly think about this regional variation in gun control, using statistical simulations to show the typical white male in the 2016 survey wave of average age, partisanship, education levels and who does not live in a rural area and does not have a gun is less likely to favor gun control if he lives in the South or West than if he lives in the Northeast. There is no difference between the Midwest and the other three regions, but clear differences emerge comparing the South and West to the baseline of the Northeast.
 
-These statements belie interesting variation in attitudes toward gun control across regions and by partisanship. Figure \ref{fig:simgoprevol} summarizes simulations from a split of Model 1 in Table 1, subsetting the analyses of Model 1 in Table 1 to the survey waves before the "Republican Revolution" (1972-1993) and after it (1994-2016). Thereafter, I generate simulations with confidence intervals for varying levels of partisanship across the four Census regions in the model with all other explanatory variables held at their typical value. Figure \ref{fig:simgoprevol} does not suggest any meaningful variation in attitudes toward gun control as a result of the sorting of the electorate in 1994 in the Midwest or the West. Instead, we see two interesting and discrernible differences in the Northeast and the South. Republicans in the Northeast are less likely to support gun control after the Republican Revolution than Republicans in the Northeast before it. Further, we see a small but discernible difference in the South, though it involves the strong Democrats and not the strong Republicans. Strong Democrats in the South became more likely to support gun control after the Republican Revolution than strong Democrats before it.
+
+```{r simregionsimple, eval=TRUE, echo=FALSE, tidy = TRUE, size="small", cache=TRUE, results="asis", warning=F, fig.cap="\\label{fig:simregionsimple} Support for Gun Control by Region in 2016", fig.width=11}
+GSS %>%
+  group_by(regioncondensed, year) %>%
+  summarize(z_age = 0,
+            collegeed = 0,
+            female = 0,
+            black = 0,
+            otherrace = 0,
+            rural=0,
+            z_partyid = 0,
+            owngund = 0)  %>%
+  na.omit() %>% 
+  ungroup() %>%
+  filter(year != 1972 & year != 1975 & year !=1978 & year !=1983 & year != 1986) %>% 
+  as.data.frame() -> newdat_m1r
+
+m1rv <- predictInterval(M1, newdata = newdat_m1r, type="probability", level=0.80,
+                        include.resid.var = F)
+
+m1rv <- cbind(newdat_m1r, m1rv) 
+
+m1rv %>% filter(year == 2016) %>%
+  ggplot(.,aes(regioncondensed, y=fit, ymin=lwr, ymax=upr)) +
+  theme_steve() + geom_pointrange() + 
+ylab("Simulated Probability (with 95% Intervals) of Support for a Police Permit to Purchase a Gun") + 
+  xlab("") + coord_flip() +
+  labs(caption = "Quantities of interest are for white men living in urban areas, without a college education or gun in the home, with the average age and partisanship.")
+
+```
+
+Simple assessments of regional variation like this would belie the more interesting variation in attitudes toward gun control across these four regions and by partisanship. `r figr("simgoprevol", TRUE, type="Figure")` summarizes simulations from a split of Model 1 in Table 1, subsetting the analyses of Model 1 in Table 1 to the survey waves before the "Republican Revolution" (1973-1993) and after it (1994-2016). Thereafter, I generate simulations with confidence intervals for varying levels of partisanship across the four Census regions in the model with all other explanatory variables held at their typical value. `r figr("simgoprevol", TRUE, type="Figure")` does not suggest any meaningful variation in attitudes toward gun control in the Midwest or the West as a result of the sorting of the electorate in 1994. Instead, we see two interesting and discernible differences in the Northeast and the South. Republicans in the Northeast are less likely to support gun control after the Republican Revolution than Republicans in the Northeast before it. Further, we see a small but discernible difference in the South, though it involves the strong Democrats and not the strong Republicans. Strong Democrats in the South became more likely to support gun control after the Republican Revolution than strong Democrats before it, which would be consistent with a sorting hypothesis that emphasizes that the Republican Revolution changed the composition of the Democratic voting bloc as much as it changed the composition of the GOP [c.f. @levendusky2009ps].
 
 ```{r simgoprevol, eval=TRUE, echo=FALSE, tidy = TRUE, size="small", cache=TRUE, results="asis", warning=F, fig.cap="\\label{fig:simgoprevol} Support for Gun Control by Partisanship, Before and After the Republican Revolution", fig.width=11, fig.height=8}
 
-M1a <- glmer(gunlaw ~ z_age + collegeed + female + black + otherrace + z_partyid + owngund + (1 + z_partyid | year) + (1 + z_partyid | regioncondensed), data=subset(GSS, year <= 1993), family=binomial(link="logit"), glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+M1a <- glmer(gunlaw ~ z_age + collegeed + female + black + otherrace + rural + z_partyid + owngund + (1 + z_partyid | year) + (1 + z_partyid | regioncondensed), data=subset(GSS, year <= 1993), family=binomial(link="logit"), glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
 
-M1b <- glmer(gunlaw ~ z_age + collegeed + female + black + otherrace + z_partyid + owngund + (1 + z_partyid | year) + (1 + z_partyid | regioncondensed), data=subset(GSS, year > 1993), family=binomial(link="logit"), glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
+M1b <- glmer(gunlaw ~ z_age + collegeed + female + black + otherrace + rural + z_partyid + owngund + (1 + z_partyid | year) + (1 + z_partyid | regioncondensed), data=subset(GSS, year > 1993), family=binomial(link="logit"), glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 100000)))
 
 
 GSS %>%
@@ -586,6 +975,7 @@ GSS %>%
             female = 0,
             black = 0,
             otherrace = 0,
+            rural=0,
 #            z_partyid = max(z_partyid, na.rm=T),
             owngund = 0)  %>%
   na.omit() %>% 
@@ -602,6 +992,7 @@ GSS %>%
             female = 0,
             black = 0,
             otherrace = 0,
+            rural=0,
 #            z_partyid = max(z_partyid, na.rm=T),
             owngund = 0,
             year = 0)  %>%
@@ -617,6 +1008,7 @@ GSS %>%
             female = 0,
             black = 0,
             otherrace = 0,
+            rural=0,
 #            z_partyid = max(z_partyid, na.rm=T),
             owngund = 0,
             year = 0)  %>%
@@ -657,14 +1049,15 @@ m1abv %>%
   xlab("") + ylab("Simulated Probability of Support for Requiring\na Police Permit Before Obtaining a Gun") +
 #    labs(caption="Source: General Social Survey (1972-2016)") +
    theme(legend.position='bottom') +
-  labs(caption = "Data: General Social Survey (1974-2016)",
-       title = "The Republican Revolution Made Strong Democrats in the South More Supportive of Gun Control",
-       subtitle = "It also made Republicans in the Northest less supportive of gun control, but the effects are quite small.")
+  labs(caption = "Data: General Social Survey (1973-2016)"#,
+       #title = "The Republican Revolution Made Strong Democrats in the South More Supportive of Gun Control",
+       #subtitle = "It also made Republicans in the Northest less supportive of gun control, but the effects are quite small."
+       )
 #  ggtitle("Support for Gun Control by Partisanship, Before and After the Republican Revolution")
 
 ```
 
-Figure \ref{fig:simyearregion} generates simulations of the likelihood of supporting mandatory police permits before obtaining a gun by condensed Census region and three values of partisanship: strong Democrats, strong Republicans, and pure independents who say they do not lean either way. The results are consistent with the previous discussion that suggests even strong Republicans support gun control and that gun control's polarization on partisan lines is only recent. The South is unique among the four regions here because we cannot discern a difference between independents and the strong Republicans and strong Democrats in the more recent survey waves when we factor in the uncertainty around the simulation's estimates. The simulations for the three other regions in the most recent survey waves suggest differences among all three partisan groups with the widest differences among groups appearing in the West.
+`r figr("simyearregion", TRUE, type="Figure")` generates simulations of the likelihood of supporting mandatory police permits before obtaining a gun by condensed Census region and three values of partisanship: strong Democrats, strong Republicans, and pure independents who say they do not lean either way. The results are consistent with the previous discussion that suggests even strong Republicans support gun control and that gun control's polarization on partisan lines is only recent. The South stands out because the overlap among strong Republicans, pure independents, and strong Democrats has the region better resemble the Northeast in more recent survey waves. Differences among partisans in both regions are not as discernible as simulations for the Midwest and West in the most recent survey waves. Those simulations in the Midwest and West suggest differences among all three partisan groups with the widest differences among groups appearing in the West.
 
 ```{r simyearregion, echo=F, eval=T, fig.width=9, fig.cap="\\label{fig:simyearregion} Support for Gun Control by Partisanship and Region", fig.height =8}
 
@@ -686,25 +1079,28 @@ m1rv %>%
   geom_hline(yintercept = .5, linetype = "dashed") +
   ylab("Simulated Probability of Support for Requiring\na Police Permit Before Obtaining a Gun") +
   theme(legend.position='bottom') +
-  labs(caption = "Data: General Social Survey (1974-2016)",
-       title = "The Greatest Polarization on Gun Control is in the Midwest and Especially the West",
-       subtitle = "We don't observe as much polarization on gun control in the Northeast or the South.")
+  labs(caption = "Data: General Social Survey (1973-2016)"#,
+       #title = "The Greatest Polarization on Gun Control is in the Midwest and Especially the West",
+       #subtitle = "We don't observe as much polarization on gun control in the Northeast or the South."
+       )
 
 ```
 
-All told, there is clear regional variation in attitudes toward gun control by different values of partisanship and over time. However, the variation does not fit a simple pattern we otherwise casually assume. Strong Democrats in the South---and not the region's strong Republicans, per se---observe a change in attitudes toward gun control after the Republican Revolution. Changes in attitudes toward gun control in the Northeast after that sorting of the electorate was more about changes among Republicans than Democrats. More recent waves have seen significant partisan sorting on attitudes toward gun control in every region, though less so in the South.
+All told, there is clear regional variation in attitudes toward gun control by different values of partisanship and over time. However, the variation does not fit a simple pattern we otherwise casually assume. Strong Democrats in the South---and not the region's strong Republicans, per se---observe a change in attitudes toward gun control after the Republican Revolution. Changes in attitudes toward gun control in the Northeast after that sorting of the electorate was more about changes among Republicans than Democrats. More recent waves have seen significant partisan sorting on attitudes toward gun control, though less so in the Northeast and the South.
 
 # Conclusion
 
-This study examined Americans' attitudes toward gun control over 28 waves of the GSS data, resulting in four findings that question conventional wisdom about public opinion in the gun control debate. First, GOP partisanship does not robustly reduce support for gun control. Second, most "strong Republicans" actually support a subtly aggressive form of gun control. Third, polarization in the gun control debate as a function of partisanship is only recent and partial, with stark differences emerging mostly in the Obama Administration. Fourth, simple statements of regional variation on attitudes about gun control (i.e. about the South and the West) mask important and more interesting variation we observe with actual data.
+Gun control policy is arguably the most salient public policy issue in the United States today. More recent mass shootings from Newtown, Connecticut to Parkland, Florida only raise the stakes associated with this policy issue and have even led to unconventional advocacy from national news outlets like the *New York Daily News* and the *New York Times*. This increasing salience and these demonstrations reflect an apparent divisiveness of this issue that has only increased over time, coinciding with several decades of gridlock on gun control policy [@spitzer2015pgc] for which our conventional wisdom puts mass-level public opinion cleavages at the foundation of this policy gridlock. However, the analyses that social scientists in fields as diverse as criminal justice, political science, and sociology have conducted to inform our conventional wisdom do not fully tell us a story that can help us understand the current political climate or the evolution in attitudes on gun control. The data that these analyses use are either weak with limited spatial and temporal scope or treat gun control as an extension of some other topic in political science. Few analyses since @erskine1972pgc have adequately leveraged our longest-running nationally representative data sets to fully explore the trends and broad correlates in the public opinion of gun control for a wide audience.
 
-The findings I report should clarify what we think to be true about why gun control legislation is a non-starter in Congress. Congress is more polarized now than it has ever been [e.g. @andrisetal2015rpsc], which might explain why a divided government, in which the legislature is controlled by Republicans, would fail to pass meaningful gun control legislation during the Obama Administration. It is convenient to think Americans are polarized as well, especially if partisans adopt elite-level cues [c.f. @zaller1992nomo]. My analysis suggests this is not true, which conforms well to general arguments that Americans are not nearly as polarized at the mass-level as they are at the elite-level [e.g. @hilltausanovitch2015dr]. No matter how polarized Congress is, and how much we assume Republicans care deeply about the Second Amendment to the U.S. Constitution, more than half of those identifying the most with the GOP support a subtly aggressive form of gun control that appears regularly in the GSS data.
+This study informs an academic and lay audience about Americans' attitudes toward gun control over `r length(years)` waves of the GSS data, resulting in several important findings. First, the two public opinion faultlines on gun control that we routinely identify as explaining gun control policy gridlock---increasing GOP partisanship and the urban/rural divide---do not robustly reduce support for gun control. The coefficients for partisanship and a respondent living in a rural area are significant in just two of the six models in Table 1. Figure \ref{fig:swplot}, which summarizes individual regressions from Model 1 in Table 1 for every survey year, shows that the coefficients are significant in a little more than half of all the models. Second, most "strong Republicans" actually support a subtly aggressive form of gun control. The implication is a negative relationship between partisanship and support for gun control should not be interpreted as equivalent to a misleading statement that self-identified strong Republicans oppose gun control. Third, polarization in the gun control debate as a function of partisanship is only recent and partial, with stark differences starting to emerge after the Republican Revolution of 1994 and emerging even more during the Obama Administration. Fourth, simple statements of regional variation on attitudes about gun control (i.e. about the South and the West) mask important and more interesting variation we observe with actual data.
 
-It is important for sake of an honest conversation that discussion of the gun control debate be mindful of these basic facts about where Americans stand on this issue. Consider a recent *New York Times* article from @buisangerkatz2017hpgd, which attempted to map more than two dozen potential gun control policies on a two-dimensional space by reference to whether Americans support it and whether experts would say it is effective. The crux of the article focused on squaring mass-level preferences with expert-level opinion, but their article buried an interesting lede. Only one of the 29 policies they measured---requiring an individual to demonstrate a "need" for a gun---had less than 50% of support of Americans. Even then, support was 49% among the general public in their poll.
+The findings I report should clarify what we think to be true about why gun control legislation is a non-starter in Congress. Congress is more polarized now than it has ever been [e.g. @andrisetal2015rpsc], which might explain why a divided government, in which the legislature is controlled by Republicans, would fail to pass gun control legislation during the Obama Administration. It is convenient to think Americans are polarized as well, especially if partisans adopt elite-level cues [c.f. @zaller1992nomo]. My analysis suggests this is not true, which conforms well to general arguments that Americans are not nearly as polarized at the mass-level as they are at the elite-level [e.g. @hilltausanovitch2015dr]. More than half of those identifying the most with the GOP support a subtly aggressive form of gun control that appears regularly in the GSS data.
 
-This true statement about the distribution of attitudes toward gun control in the data belie the worrying trends we are seeing emerge among citizens. Republican partisans are gradually adopting elite cues on the topic of gun control. Right now, legislative unwillingness to address meaningful gun control falls more on lawmakers in Washington for not translating the public's preferences into laws that serve the public's interest and laws that promote the public's welfare. However, the trends in the data suggest citizens themselves will become obstacles to meaningful gun control solutions the extent to which opposition to gun control may soon become a majoritarian position among Republican partisans.
+It is important for sake of an honest conversation that discussion of the gun control debate be mindful of these basic facts about where Americans stand on this issue. Consider a recent *New York Times* article from @buisangerkatz2017hpgd, which attempted to map more than two dozen potential gun control policies on a two-dimensional space by reference to whether Americans support it and whether experts would say it is effective. The crux of the article focused on squaring mass-level preferences with expert-level opinion, but their article buried an interesting lede. Only one of the 29 policies they measured---requiring an individual to demonstrate a "need" for a gun---had less than 50% of support of Americans. Even then, support was 49% among the general public in their poll. This true statement about the distribution of attitudes toward gun control in the data belie the trends we are seeing emerge among citizens. Republican partisans are gradually adopting elite cues on the topic of gun control. Right now, gun policy gridlock says more about partisan polarization at the elite-level than the mass-level, but the trends in the data suggest partisans at the mass-level will become a bigger part of the gun control policy gridlock in the near future. 
 
-There is one silver lining for gun control advocates amid these worrying trends, the mass shootings we observe, and that Republicans, as of 2017, control all chambers of government. The GSS gun control measure is peculiar both because we regularly observe it in almost all survey waves since 1972 and because almost no gun control discussion approaches the topic of linking gun acquisition to mandatory police permits. Whereas gun control opponents couch their opposition in the language of state overreach into civil liberties, gun control advocates instead prefer to massage objections from gun control opponents by proposing solutions that target gun show loopholes, terror watch lists, and military-style assault rifles. The GSS data suggest this might be a missed opportunity for gun control advocates to engage in deliberate issue-linkage. Citizens routinely list the police as one of the most trusted institutions in the country, behind only the military and small businesses [@gallup2017ci]. Gun control advocates may better advance their cause by linking police security with overall public security in advocating for gun control.
+This *New York Times* analysis, combined with my analyses, offer interesting hypotheses about issue-framing on gun control for future research. My analyses show gun control has broad support over time, even among those with the strongest affinities for the GOP. Likewise, a battery of 29 proposed gun control policies of varying levels of effectiveness also enjoy wide support. Thus, it might be unsurprising the broader questions about gun control that frame it as a constitutional issue or pitch the issue as the protection of the rights of gun owners find more lukewarm support for gun control [e.g. @prc2017pvg]. This could explain some of the messaging success for the NRA on this issue [@horwitzanderson2009gdii] and more specific prompts about exact policy proposals may elicit more support as we see in the GSS data. Further, the gun control policy proposal in the GSS is unique because it also engages in deliberate issue-linkage (i.e. implicitly connecting gun control to confidence and trust in the police). Citizens routinely list the police as one of the most trusted institutions in the country, behind only the military and small businesses [@gallup2017ci]. Gun control advocates may better advance their cause by linking police security with overall public security in advocating for gun control and framing the issue like this may have discernible effects in survey experiment prompts.
+
+<!-- There is one silver lining for gun control advocates amid these worrying trends, the mass shootings we observe, and that Republicans, as of 2017, control all chambers of government. The GSS gun control measure is peculiar both because we regularly observe it in almost all survey waves since 1972 and because almost no gun control discussion approaches the topic of linking gun acquisition to mandatory police permits. Whereas gun control opponents couch their opposition in the language of state overreach into civil liberties, gun control advocates instead prefer to massage objections from gun control opponents by proposing solutions that target gun show loopholes, terror watch lists, and military-style assault rifles. The GSS data suggest this might be a missed opportunity for gun control advocates to engage in deliberate issue-linkage. Citizens routinely list the police as one of the most trusted institutions in the country, behind only the military and small businesses [@gallup2017ci]. Gun control advocates may better advance their cause by linking police security with overall public security in advocating for gun control.
 
 <!-- The failure to push common sense gun control into legislation may be a "moral outrage and national disgrace" as @nyt2015egea of the *New York Times* wrote on its front page after the San Bernardino terrorist incident. However, my analysis suggests that outrage and disgrace falls mostly on elected officials who are not channeling clear preferences among the general public, even among strong Republicans, into meaningful legislation. -->
 
@@ -719,4 +1115,3 @@ There is one silver lining for gun control advocates amid these worrying trends,
 \vspace*{-0.2in}
 \noindent
 \singlespacing
-<!-- \singlespacing -->
